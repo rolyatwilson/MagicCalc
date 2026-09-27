@@ -71,6 +71,46 @@ struct MagicCalcTests {
         #expect(calculator.display == "46")
     }
 
+    @Test func clearButtonSwitchesBetweenAllClearAndClearEntry() {
+        var calculator = MagicCalculator()
+
+        #expect(calculator.clearButtonTitle == "AC")
+
+        calculator.tapDigit("7")
+        #expect(calculator.clearButtonTitle == "C")
+
+        calculator.tapClear()
+        #expect(calculator.display == "0")
+        #expect(calculator.clearButtonTitle == "AC")
+
+        calculator.tapDigit("1")
+        calculator.tapOperation(.add)
+        #expect(calculator.display == "1 +")
+        #expect(calculator.clearButtonTitle == "AC")
+
+        calculator.tapDigit("2")
+        #expect(calculator.display == "1 + 2")
+        #expect(calculator.clearButtonTitle == "C")
+
+        calculator.tapClear()
+        #expect(calculator.display == "1 +")
+        #expect(calculator.clearButtonTitle == "AC")
+    }
+
+    @Test func clearEntryDoesNotCountTowardTrickArming() {
+        var calculator = MagicCalculator()
+
+        calculator.tapDigit("9")
+        calculator.tapClear()
+        calculator.tapClear()
+        calculator.tapClear()
+
+        #expect(calculator.indicatorState == .none)
+
+        calculator.tapClear()
+        #expect(calculator.indicatorState == .armed)
+    }
+
     @Test func thirdVisibleEntryIsReplacedDigitByDigitWithCompletingNumber() {
         let now = date(month: 9, day: 27, hour: 21, minute: 14, second: 29)
         var calculator = armedCalculatorWithTwoTerms(now: now)

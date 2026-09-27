@@ -195,7 +195,7 @@ struct ContentView: View {
             ForEach(rows, id: \.self) { row in
                 HStack(spacing: spacing) {
                     ForEach(row, id: \.self) { key in
-                        CalculatorButton(key: key, fontScale: fontScale) {
+                        CalculatorButton(key: key, titleOverride: titleOverride(for: key), fontScale: fontScale) {
                             tap(key)
                         }
                         .frame(width: buttonSize.width, height: buttonSize.height)
@@ -230,6 +230,14 @@ struct ContentView: View {
         case .equals:
             calculator.tapEquals()
         }
+    }
+
+    private func titleOverride(for key: CalculatorKey) -> String? {
+        if key == .clear {
+            return calculator.clearButtonTitle
+        }
+
+        return nil
     }
 
     private func scheduleCancellationIndicatorClear() {
@@ -391,11 +399,13 @@ private struct DisplayLine: View {
 
 private struct CalculatorButton: View {
     let key: CalculatorKey
+    let titleOverride: String?
     let fontScale: CGFloat
     let action: () -> Void
 
-    init(key: CalculatorKey, fontScale: CGFloat = 1, action: @escaping () -> Void) {
+    init(key: CalculatorKey, titleOverride: String? = nil, fontScale: CGFloat = 1, action: @escaping () -> Void) {
         self.key = key
+        self.titleOverride = titleOverride
         self.fontScale = fontScale
         self.action = action
     }
@@ -416,7 +426,15 @@ private struct CalculatorButton: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(key.accessibilityLabel)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var accessibilityLabel: String {
+        if key == .clear, titleOverride == "C" {
+            return "Clear"
+        }
+
+        return key.accessibilityLabel
     }
 
     @ViewBuilder
@@ -425,7 +443,7 @@ private struct CalculatorButton: View {
         case .backspace, .toggleSign:
             Image(systemName: key.title)
         default:
-            Text(key.title)
+            Text(titleOverride ?? key.title)
         }
     }
 }

@@ -80,6 +80,10 @@ struct MagicCalculator {
         !isMagicTermComplete
     }
 
+    var clearButtonTitle: String {
+        isClearEntryAvailable ? "C" : "AC"
+    }
+
     var statusText: String? {
         guard let activeTrickPlan else { return nil }
 
@@ -230,6 +234,11 @@ struct MagicCalculator {
             return
         }
 
+        if isClearEntryAvailable {
+            clearCurrentEntry()
+            return
+        }
+
         clearTapStreak += 1
 
         if clearTapStreak >= 3 {
@@ -241,13 +250,7 @@ struct MagicCalculator {
 
         guard !cancelIfTrickCannotUseNonAddInput() else { return }
 
-        if startsNewInput || currentInput == "0" {
-            resetAll(keepClearStreak: true)
-        } else {
-            currentInput = "0"
-            startsNewInput = true
-            updateDisplayForCurrentExpression()
-        }
+        resetAll(keepClearStreak: true)
     }
 
     mutating func tapToggleSign() {
@@ -306,6 +309,10 @@ struct MagicCalculator {
         hasStartedMagicTerm && nextMagicDigitIndex >= magicTermDigits.count
     }
 
+    private var isClearEntryAvailable: Bool {
+        !startsNewInput
+    }
+
     private mutating func enterVisibleDigit(_ digit: String) {
         if startsNewInput {
             currentInput = digit == "0" ? "0" : digit
@@ -319,6 +326,14 @@ struct MagicCalculator {
         secondaryDisplay = nil
         updateDisplayForCurrentExpression()
         cancelIfVisibleTrickInputIsTooLong()
+    }
+
+    private mutating func clearCurrentEntry() {
+        clearTapStreak = 0
+        secondaryDisplay = nil
+        currentInput = "0"
+        startsNewInput = true
+        updateDisplayForCurrentExpression()
     }
 
     private mutating func enterNextMagicDigit(now: Date, calendar: Calendar) {
