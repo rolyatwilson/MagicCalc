@@ -316,13 +316,15 @@ private enum CalculatorKey: Hashable {
     var fontSize: CGFloat {
         switch self {
         case .operation, .equals:
-            return 50
+            return 37.5
         case .backspace:
             return 34
         case .toggleSign:
-            return 40
+            return 33
         case .percent:
-            return 42
+            return 34.65
+        case .clear:
+            return 31.35
         case .decimal:
             return 38
         default:
