@@ -2,8 +2,6 @@
 
 MagicCalc looks like a normal calculator, but it is made for a party magic trick.
 
-![MagicCalc trick preview](README-assets/trick-preview.png)
-
 ## What It Does
 
 The app helps a magician lead a group through a calculator trick. Everyone uses their own calculator. At the end, the answer matches the current date and time.
@@ -25,7 +23,10 @@ The app helps a magician lead a group through a calculator trick. Everyone uses 
 13. Turn the phone back over
 14. Say the new number out loud
 15. Have everyone type that number and press `=`
-16. The final answer will match the date and time
+16. The final answer will match the date and 12 hour time
+
+In the example screenshot, the resulting number is the exact date and 12 hour time, eg September 27, 11:41 displayed as 9271141 (eg 9/27/11:41). (See the current device system time of 11:41 in the top left of the screenshot)
+![MagicCalc trick preview](README-assets/trick-preview.png)
 
 ## Tips
 

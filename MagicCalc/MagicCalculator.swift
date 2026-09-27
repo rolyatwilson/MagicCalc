@@ -529,9 +529,10 @@ struct MagicCalculator {
         let usesCurrentMinute = secondsRemaining > 30
         let targetDate = usesCurrentMinute ? now : calendar.date(byAdding: .minute, value: 1, to: now) ?? now
         let components = calendar.dateComponents([.month, .day, .hour, .minute], from: targetDate)
+        let hour = Self.twelveHourClockHour(from: components.hour ?? 0)
         let targetValue = (components.month ?? 0) * 1_000_000
             + (components.day ?? 0) * 10_000
-            + (components.hour ?? 0) * 100
+            + hour * 100
             + (components.minute ?? 0)
 
         return MagicTrickPlan(
@@ -540,6 +541,11 @@ struct MagicCalculator {
             targetDate: targetDate,
             usesNextMinute: !usesCurrentMinute
         )
+    }
+
+    private static func twelveHourClockHour(from hour: Int) -> Int {
+        let hour = hour % 12
+        return hour == 0 ? 12 : hour
     }
 
     private static func formatNumberText(_ text: String) -> String {

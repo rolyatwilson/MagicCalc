@@ -20,18 +20,22 @@ MagicCalc is built around a party magic effect disguised as a normal iOS-style c
 The target is encoded as:
 
 ```text
-MMDDHHmm
+MMDDhhmm
 ```
+
+The hour uses normal 12 hour clock time, not 24 hour time.
 
 For example, September 27 at 9:14 PM becomes:
 
 ```text
-09272114
+09270914
 ```
 
-A calculator will display that as `9272114`, because leading zeroes are not shown.
+A calculator will display that as `9270914`, because leading zeroes are not shown.
 
-The app uses 24 hour time so the result is unambiguous.
+September 27 at 2:41 PM becomes `09270241`, not `09271441`.
+
+Noon and midnight both use `12` for the hour.
 
 ## Timing Rule
 

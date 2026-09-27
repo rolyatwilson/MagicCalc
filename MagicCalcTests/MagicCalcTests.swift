@@ -21,8 +21,8 @@ struct MagicCalcTests {
 
         let plan = MagicCalculator.makeTrickPlan(currentSum: 1_111_110, now: now, calendar: calendar)
 
-        #expect(plan.targetValue == 9_272_114)
-        #expect(plan.selectedNumber == 8_161_004)
+        #expect(plan.targetValue == 9_270_914)
+        #expect(plan.selectedNumber == 8_159_804)
         #expect(plan.usesNextMinute == false)
         #expect(plan.isSevenDigitSelection)
     }
@@ -32,9 +32,29 @@ struct MagicCalcTests {
 
         let plan = MagicCalculator.makeTrickPlan(currentSum: 1_111_110, now: now, calendar: calendar)
 
-        #expect(plan.targetValue == 9_272_115)
-        #expect(plan.selectedNumber == 8_161_005)
+        #expect(plan.targetValue == 9_270_915)
+        #expect(plan.selectedNumber == 8_159_805)
         #expect(plan.usesNextMinute)
+    }
+
+    @Test func trickUsesTwelveHourClockForAfternoonTargets() {
+        let now = date(month: 9, day: 27, hour: 14, minute: 41, second: 29)
+
+        let plan = MagicCalculator.makeTrickPlan(currentSum: 1_111_110, now: now, calendar: calendar)
+
+        #expect(plan.targetValue == 9_270_241)
+        #expect(plan.selectedNumber == 8_159_131)
+    }
+
+    @Test func trickUsesTwelveForNoonAndMidnight() {
+        let noon = date(month: 9, day: 27, hour: 12, minute: 5, second: 29)
+        let midnight = date(month: 9, day: 27, hour: 0, minute: 5, second: 29)
+
+        let noonPlan = MagicCalculator.makeTrickPlan(currentSum: 1_111_110, now: noon, calendar: calendar)
+        let midnightPlan = MagicCalculator.makeTrickPlan(currentSum: 1_111_110, now: midnight, calendar: calendar)
+
+        #expect(noonPlan.targetValue == 9_271_205)
+        #expect(midnightPlan.targetValue == 9_271_205)
     }
 
     @Test func expressionDisplaysWithCommasUntilEquals() {
@@ -123,12 +143,12 @@ struct MagicCalcTests {
         #expect(calculator.indicatorState == .capturingSecret)
 
         enter("999999", into: &calculator, now: now)
-        #expect(calculator.display == "123,456 + 654,321 + 8,494,337")
+        #expect(calculator.display == "123,456 + 654,321 + 8,493,137")
         #expect(calculator.indicatorState == .armed)
 
         calculator.tapEquals()
-        #expect(calculator.secondaryDisplay == "123,456 + 654,321 + 8,494,337")
-        #expect(calculator.display == "9,272,114")
+        #expect(calculator.secondaryDisplay == "123,456 + 654,321 + 8,493,137")
+        #expect(calculator.display == "9,270,914")
         #expect(calculator.indicatorState == .none)
     }
 
@@ -144,11 +164,11 @@ struct MagicCalcTests {
         calculator.tapPercent()
         calculator.tapOperation(.divide)
 
-        #expect(calculator.display == "123,456 + 654,321 + 8,494,337")
+        #expect(calculator.display == "123,456 + 654,321 + 8,493,137")
         #expect(calculator.indicatorState == .armed)
 
         calculator.tapEquals()
-        #expect(calculator.display == "9,272,114")
+        #expect(calculator.display == "9,270,914")
         #expect(calculator.indicatorState == .none)
     }
 
@@ -185,7 +205,7 @@ struct MagicCalcTests {
         let calculator = armedCalculatorWithTwoTerms(now: now)
 
         #expect(calculator.debugStateText == "Trick: active | Term: 3 | Sum: 777777")
-        #expect(calculator.debugPlanText(now: now, calendar: calendar) == "Secret: 8494337 | Final: 9272114")
+        #expect(calculator.debugPlanText(now: now, calendar: calendar) == "Secret: 8493137 | Final: 9270914")
     }
 
     private func armedCalculatorWithTwoTerms(now: Date) -> MagicCalculator {
