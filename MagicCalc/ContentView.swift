@@ -12,7 +12,7 @@ struct ContentView: View {
     @State private var handledCancellationToken = 0
     @State private var cancellationClearTask: Task<Void, Never>?
 
-    private let rows: [[CalculatorKey]] = [
+    private let portraitRows: [[CalculatorKey]] = [
         [.backspace, .clear, .percent, .operation(.divide)],
         [.digit("7"), .digit("8"), .digit("9"), .operation(.multiply)],
         [.digit("4"), .digit("5"), .digit("6"), .operation(.subtract)],
@@ -20,22 +20,68 @@ struct ContentView: View {
         [.toggleSign, .digit("0"), .decimal, .equals]
     ]
 
+    private let landscapeRows: [[CalculatorKey]] = [
+        [.digit("7"), .digit("8"), .digit("9"), .backspace, .operation(.divide)],
+        [.digit("4"), .digit("5"), .digit("6"), .clear, .operation(.multiply)],
+        [.digit("1"), .digit("2"), .digit("3"), .percent, .operation(.subtract)],
+        [.toggleSign, .digit("0"), .decimal, .equals, .operation(.add)]
+    ]
+
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
+        GeometryReader { proxy in
+            let isLandscape = proxy.size.width > proxy.size.height
 
-            VStack(spacing: 12) {
-                Spacer(minLength: 24)
-                display
-                keypad
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                if isLandscape {
+                    landscapeContent
+                } else {
+                    portraitContent
+                }
+
+                armedIndicator
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 22)
-
-            armedIndicator
         }
         .onChange(of: calculator.cancellationToken) { _, _ in
             scheduleCancellationIndicatorClear()
+        }
+    }
+
+    private var portraitContent: some View {
+        VStack(spacing: 12) {
+            Spacer(minLength: 24)
+            display
+            portraitKeypad
+        }
+        .padding(.horizontal, 18)
+        .padding(.bottom, 22)
+    }
+
+    private var landscapeContent: some View {
+        GeometryReader { proxy in
+            let horizontalPadding: CGFloat = 56
+            let bottomPadding: CGFloat = 18
+            let keypadSpacing: CGFloat = 12
+            let availableWidth = max(0, proxy.size.width - horizontalPadding * 2)
+            let buttonWidth = (availableWidth - keypadSpacing * 4) / 5
+            let buttonHeight = min((proxy.size.height - 122 - bottomPadding - keypadSpacing * 3) / 4, buttonWidth * 0.38)
+            let keypadHeight = buttonHeight * 4 + keypadSpacing * 3
+
+            VStack(spacing: 0) {
+                Spacer(minLength: 16)
+
+                displayView(minHeight: 92, mainFontSize: 68, mainFallbackFontSizes: [56, 46, 38])
+                    .padding(.horizontal, horizontalPadding)
+
+                Spacer(minLength: 18)
+
+                keypad(rows: landscapeRows, spacing: keypadSpacing, buttonSize: CGSize(width: buttonWidth, height: buttonHeight), fontScale: 0.78)
+                    .frame(width: availableWidth, height: keypadHeight)
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.bottom, bottomPadding)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .bottom)
         }
     }
 
@@ -99,6 +145,14 @@ struct ContentView: View {
     #endif
 
     private var display: some View {
+        displayView()
+    }
+
+    private func displayView(
+        minHeight: CGFloat = 142,
+        mainFontSize: CGFloat = 82,
+        mainFallbackFontSizes: [CGFloat] = [64, 54, 46]
+    ) -> some View {
         VStack(alignment: .trailing, spacing: 8) {
             if let secondaryDisplay = calculator.secondaryDisplay {
                 DisplayLine(
@@ -114,41 +168,42 @@ struct ContentView: View {
 
             DisplayLine(
                 text: calculator.display,
-                fontSize: 82,
-                fallbackFontSizes: [64, 54, 46],
+                fontSize: mainFontSize,
+                fallbackFontSizes: mainFallbackFontSizes,
                 weight: .light,
                 color: .white
             )
             .accessibilityLabel("Calculator display")
             .accessibilityValue(calculator.display)
         }
-        .frame(maxWidth: .infinity, minHeight: 142, alignment: .bottomTrailing)
+        .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .bottomTrailing)
     }
 
-    private var keypad: some View {
+    private var portraitKeypad: some View {
         GeometryReader { proxy in
             let spacing: CGFloat = 12
             let buttonSize = (proxy.size.width - spacing * 3) / 4
 
-            VStack(spacing: spacing) {
-                ForEach(rows, id: \.self) { row in
-                    HStack(spacing: spacing) {
-                        ForEach(row, id: \.self) { key in
-                            CalculatorButton(key: key) {
-                                tap(key)
-                            }
-                            .frame(
-                                width: key.widthMultiplier == 2 ? buttonSize * 2 + spacing : buttonSize,
-                                height: buttonSize
-                            )
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
+            keypad(rows: portraitRows, spacing: spacing, buttonSize: CGSize(width: buttonSize, height: buttonSize))
             .frame(maxHeight: .infinity, alignment: .bottom)
         }
         .aspectRatio(0.79, contentMode: .fit)
+    }
+
+    private func keypad(rows: [[CalculatorKey]], spacing: CGFloat, buttonSize: CGSize, fontScale: CGFloat = 1) -> some View {
+        VStack(spacing: spacing) {
+            ForEach(rows, id: \.self) { row in
+                HStack(spacing: spacing) {
+                    ForEach(row, id: \.self) { key in
+                        CalculatorButton(key: key, fontScale: fontScale) {
+                            tap(key)
+                        }
+                        .frame(width: buttonSize.width, height: buttonSize.height)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
     }
 
     private func tap(_ key: CalculatorKey) {
@@ -336,12 +391,19 @@ private struct DisplayLine: View {
 
 private struct CalculatorButton: View {
     let key: CalculatorKey
+    let fontScale: CGFloat
     let action: () -> Void
+
+    init(key: CalculatorKey, fontScale: CGFloat = 1, action: @escaping () -> Void) {
+        self.key = key
+        self.fontScale = fontScale
+        self.action = action
+    }
 
     var body: some View {
         Button(action: action) {
             buttonContent
-                .font(.system(size: key.fontSize, weight: .regular, design: .default))
+                .font(.system(size: key.fontSize * fontScale, weight: .regular, design: .default))
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
