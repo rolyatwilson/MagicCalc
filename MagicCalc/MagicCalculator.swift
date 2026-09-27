@@ -203,6 +203,27 @@ struct MagicCalculator {
         resetTrickStateAfterResult()
     }
 
+    mutating func tapBackspace() {
+        if isCapturingSecretInput {
+            tapSecretInput()
+            return
+        }
+
+        clearTapStreak = 0
+        secondaryDisplay = nil
+
+        guard !startsNewInput else { return }
+
+        if currentInput.count > 1 {
+            currentInput.removeLast()
+        } else {
+            currentInput = "0"
+            startsNewInput = true
+        }
+
+        updateDisplayForCurrentExpression()
+    }
+
     mutating func tapClear() {
         if isCapturingSecretInput {
             tapSecretInput()

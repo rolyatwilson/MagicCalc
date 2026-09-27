@@ -13,11 +13,11 @@ struct ContentView: View {
     @State private var cancellationClearTask: Task<Void, Never>?
 
     private let rows: [[CalculatorKey]] = [
-        [.clear, .toggleSign, .percent, .operation(.divide)],
+        [.backspace, .clear, .percent, .operation(.divide)],
         [.digit("7"), .digit("8"), .digit("9"), .operation(.multiply)],
         [.digit("4"), .digit("5"), .digit("6"), .operation(.subtract)],
         [.digit("1"), .digit("2"), .digit("3"), .operation(.add)],
-        [.digit("0"), .decimal, .equals]
+        [.toggleSign, .digit("0"), .decimal, .equals]
     ]
 
     var body: some View {
@@ -104,7 +104,7 @@ struct ContentView: View {
                 DisplayLine(
                     text: secondaryDisplay,
                     fontSize: 24,
-                    fallbackFontSize: 20,
+                    fallbackFontSizes: [20, 17, 14],
                     weight: .regular,
                     color: Color(.systemGray2)
                 )
@@ -115,7 +115,7 @@ struct ContentView: View {
             DisplayLine(
                 text: calculator.display,
                 fontSize: 82,
-                fallbackFontSize: 64,
+                fallbackFontSizes: [64, 54, 46],
                 weight: .light,
                 color: .white
             )
@@ -162,6 +162,8 @@ struct ContentView: View {
             calculator.tapDigit(digit)
         case .decimal:
             calculator.tapDecimal()
+        case .backspace:
+            calculator.tapBackspace()
         case .clear:
             calculator.tapClear()
         case .toggleSign:
@@ -194,6 +196,7 @@ struct ContentView: View {
 private enum CalculatorKey: Hashable {
     case digit(String)
     case decimal
+    case backspace
     case clear
     case toggleSign
     case percent
@@ -206,6 +209,8 @@ private enum CalculatorKey: Hashable {
             return digit
         case .decimal:
             return "."
+        case .backspace:
+            return "delete.left"
         case .clear:
             return "AC"
         case .toggleSign:
@@ -221,26 +226,23 @@ private enum CalculatorKey: Hashable {
 
     var backgroundColor: Color {
         switch self {
-        case .clear, .toggleSign, .percent:
-            return Color(.systemGray2)
+        case .clear, .toggleSign, .percent, .backspace:
+            return Color(.systemGray)
         case .operation, .equals:
             return .orange
         case .digit, .decimal:
-            return Color(.darkGray)
+            return Color(red: 0.18, green: 0.18, blue: 0.18)
         }
     }
 
     var foregroundColor: Color {
-        switch self {
-        case .clear, .toggleSign, .percent:
-            return .black
-        case .digit, .decimal, .operation, .equals:
-            return .white
-        }
+        .white
     }
 
     var accessibilityLabel: String {
         switch self {
+        case .backspace:
+            return "Backspace"
         case .clear:
             return "All Clear"
         case .toggleSign:
@@ -265,14 +267,14 @@ private enum CalculatorKey: Hashable {
     }
 
     var widthMultiplier: CGFloat {
-        self == .digit("0") ? 2 : 1
+        1
     }
 }
 
 private struct DisplayLine: View {
     let text: String
     let fontSize: CGFloat
-    let fallbackFontSize: CGFloat
+    let fallbackFontSizes: [CGFloat]
     let weight: Font.Weight
     let color: Color
 
@@ -281,7 +283,10 @@ private struct DisplayLine: View {
             ZStack(alignment: .trailing) {
                 ViewThatFits(in: .horizontal) {
                     line(size: fontSize)
-                    line(size: fallbackFontSize)
+
+                    ForEach(fallbackFontSizes, id: \.self) { size in
+                        line(size: size)
+                    }
                 }
                 .frame(width: proxy.size.width, alignment: .trailing)
             }
@@ -307,8 +312,8 @@ private struct CalculatorButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(key.title)
-                .font(.system(size: 32, weight: .regular))
+            buttonContent
+                .font(.system(size: 34, weight: .regular))
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -318,6 +323,16 @@ private struct CalculatorButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(key.accessibilityLabel)
+    }
+
+    @ViewBuilder
+    private var buttonContent: some View {
+        switch key {
+        case .backspace:
+            Image(systemName: key.title)
+        default:
+            Text(key.title)
+        }
     }
 }
 
