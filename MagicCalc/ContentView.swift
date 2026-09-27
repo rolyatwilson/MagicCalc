@@ -100,15 +100,27 @@ struct ContentView: View {
 
     private var display: some View {
         VStack(alignment: .trailing, spacing: 8) {
-            Text(calculator.display)
-                .font(.system(size: 82, weight: .light, design: .default))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.35)
-                .monospacedDigit()
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .accessibilityLabel("Calculator display")
-                .accessibilityValue(calculator.display)
+            if let secondaryDisplay = calculator.secondaryDisplay {
+                DisplayLine(
+                    text: secondaryDisplay,
+                    fontSize: 24,
+                    fallbackFontSize: 20,
+                    weight: .regular,
+                    color: Color(.systemGray2)
+                )
+                .accessibilityLabel("Calculator expression")
+                .accessibilityValue(secondaryDisplay)
+            }
+
+            DisplayLine(
+                text: calculator.display,
+                fontSize: 82,
+                fallbackFontSize: 64,
+                weight: .light,
+                color: .white
+            )
+            .accessibilityLabel("Calculator display")
+            .accessibilityValue(calculator.display)
         }
         .frame(maxWidth: .infinity, minHeight: 142, alignment: .bottomTrailing)
     }
@@ -254,6 +266,38 @@ private enum CalculatorKey: Hashable {
 
     var widthMultiplier: CGFloat {
         self == .digit("0") ? 2 : 1
+    }
+}
+
+private struct DisplayLine: View {
+    let text: String
+    let fontSize: CGFloat
+    let fallbackFontSize: CGFloat
+    let weight: Font.Weight
+    let color: Color
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .trailing) {
+                ViewThatFits(in: .horizontal) {
+                    line(size: fontSize)
+                    line(size: fallbackFontSize)
+                }
+                .frame(width: proxy.size.width, alignment: .trailing)
+            }
+            .frame(width: proxy.size.width, alignment: .trailing)
+            .clipped()
+        }
+        .frame(height: fontSize)
+    }
+
+    private func line(size: CGFloat) -> some View {
+        Text(text)
+            .font(.system(size: size, weight: weight, design: .default))
+            .foregroundStyle(color)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .monospacedDigit()
     }
 }
 

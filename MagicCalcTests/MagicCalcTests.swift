@@ -37,22 +37,58 @@ struct MagicCalcTests {
         #expect(plan.usesNextMinute)
     }
 
+    @Test func expressionDisplaysWithCommasUntilEquals() {
+        var calculator = MagicCalculator()
+
+        enter("123456", into: &calculator)
+        #expect(calculator.display == "123,456")
+
+        calculator.tapOperation(.add)
+        #expect(calculator.display == "123,456 +")
+
+        calculator.tapDigit("7")
+        #expect(calculator.display == "123,456 + 7")
+
+        enter("54321", into: &calculator)
+        #expect(calculator.display == "123,456 + 754,321")
+        #expect(calculator.secondaryDisplay == nil)
+
+        calculator.tapEquals()
+        #expect(calculator.secondaryDisplay == "123,456 + 754,321")
+        #expect(calculator.display == "877,777")
+    }
+
+    @Test func finalExpressionDoesNotShowTrailingOperator() {
+        var calculator = MagicCalculator()
+
+        enter("12", into: &calculator)
+        calculator.tapOperation(.add)
+        enter("34", into: &calculator)
+        calculator.tapOperation(.add)
+        calculator.tapEquals()
+
+        #expect(calculator.secondaryDisplay == "12 + 34")
+        #expect(calculator.display == "46")
+    }
+
     @Test func thirdVisibleEntryIsReplacedDigitByDigitWithCompletingNumber() {
         let now = date(month: 9, day: 27, hour: 21, minute: 14, second: 29)
         var calculator = armedCalculatorWithTwoTerms(now: now)
 
         #expect(calculator.indicatorState == .capturingSecret)
+        #expect(calculator.display == "123,456 + 654,321 +")
 
         calculator.tapDigit("9", now: now, calendar: calendar)
-        #expect(calculator.display == "8")
+        #expect(calculator.display == "123,456 + 654,321 + 8")
         #expect(calculator.indicatorState == .capturingSecret)
 
         enter("999999", into: &calculator, now: now)
-        #expect(calculator.display == "8494337")
+        #expect(calculator.display == "123,456 + 654,321 + 8,494,337")
         #expect(calculator.indicatorState == .armed)
 
         calculator.tapEquals()
-        #expect(calculator.display == "9272114")
+        #expect(calculator.secondaryDisplay == "123,456 + 654,321 + 8,494,337")
+        #expect(calculator.display == "9,272,114")
         #expect(calculator.indicatorState == .none)
     }
 
@@ -68,11 +104,11 @@ struct MagicCalcTests {
         calculator.tapPercent()
         calculator.tapOperation(.divide)
 
-        #expect(calculator.display == "8494337")
+        #expect(calculator.display == "123,456 + 654,321 + 8,494,337")
         #expect(calculator.indicatorState == .armed)
 
         calculator.tapEquals()
-        #expect(calculator.display == "9272114")
+        #expect(calculator.display == "9,272,114")
         #expect(calculator.indicatorState == .none)
     }
 
@@ -124,9 +160,13 @@ struct MagicCalcTests {
         return calculator
     }
 
-    private func enter(_ value: String, into calculator: inout MagicCalculator, now: Date) {
+    private func enter(_ value: String, into calculator: inout MagicCalculator, now: Date? = nil) {
         for digit in value.map(String.init) {
-            calculator.tapDigit(digit, now: now, calendar: calendar)
+            if let now {
+                calculator.tapDigit(digit, now: now, calendar: calendar)
+            } else {
+                calculator.tapDigit(digit)
+            }
         }
     }
 
