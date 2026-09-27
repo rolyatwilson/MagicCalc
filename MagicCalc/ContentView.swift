@@ -214,7 +214,7 @@ private enum CalculatorKey: Hashable {
         case .clear:
             return "AC"
         case .toggleSign:
-            return "+/-"
+            return "plus.forwardslash.minus"
         case .percent:
             return "%"
         case .operation(let operation):
@@ -226,17 +226,45 @@ private enum CalculatorKey: Hashable {
 
     var backgroundColor: Color {
         switch self {
-        case .clear, .toggleSign, .percent, .backspace:
-            return Color(.systemGray)
+        case .backspace, .clear, .percent:
+            return Color(red: 0.361, green: 0.361, blue: 0.373)
         case .operation, .equals:
-            return .orange
-        case .digit, .decimal:
-            return Color(red: 0.18, green: 0.18, blue: 0.18)
+            return Color(red: 1.0, green: 0.584, blue: 0.0)
+        case .digit, .decimal, .toggleSign:
+            return Color(red: 0.165, green: 0.165, blue: 0.173)
         }
     }
 
     var foregroundColor: Color {
         .white
+    }
+
+    var borderColor: Color {
+        switch self {
+        case .operation, .equals:
+            return Color(red: 1.0, green: 0.72, blue: 0.27)
+        case .backspace, .clear, .percent:
+            return Color(red: 0.63, green: 0.63, blue: 0.64)
+        case .digit, .decimal, .toggleSign:
+            return Color(red: 0.38, green: 0.38, blue: 0.39)
+        }
+    }
+
+    var fontSize: CGFloat {
+        switch self {
+        case .operation, .equals:
+            return 50
+        case .backspace:
+            return 42
+        case .toggleSign:
+            return 40
+        case .percent:
+            return 42
+        case .decimal:
+            return 38
+        default:
+            return 38
+        }
     }
 
     var accessibilityLabel: String {
@@ -313,13 +341,17 @@ private struct CalculatorButton: View {
     var body: some View {
         Button(action: action) {
             buttonContent
-                .font(.system(size: 34, weight: .regular))
+                .font(.system(size: key.fontSize, weight: .regular, design: .default))
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(key.backgroundColor)
                 .foregroundStyle(key.foregroundColor)
                 .clipShape(Capsule())
+                .overlay {
+                    Capsule()
+                        .stroke(key.borderColor, lineWidth: 1)
+                }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(key.accessibilityLabel)
@@ -328,7 +360,7 @@ private struct CalculatorButton: View {
     @ViewBuilder
     private var buttonContent: some View {
         switch key {
-        case .backspace:
+        case .backspace, .toggleSign:
             Image(systemName: key.title)
         default:
             Text(key.title)
