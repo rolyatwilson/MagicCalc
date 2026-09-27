@@ -33,9 +33,17 @@ enum CalculatorOperation: String, Hashable {
     case divide = "÷"
 }
 
+enum TrickIndicatorState: Equatable {
+    case none
+    case armed
+    case capturingSecret
+    case cancelled
+}
+
 struct MagicCalculator {
     private(set) var display = "0"
     private(set) var activeTrickPlan: MagicTrickPlan?
+    private(set) var cancellationToken = 0
 
     private var currentInput = "0"
     private var storedValue: Double?
@@ -48,9 +56,25 @@ struct MagicCalculator {
     private var hasStartedMagicTerm = false
     private var magicTermDigits: [Character] = []
     private var nextMagicDigitIndex = 0
+    private var isCancellationIndicatorVisible = false
 
-    var isArmed: Bool {
-        isTrickArmed
+    var indicatorState: TrickIndicatorState {
+        if isCancellationIndicatorVisible {
+            return .cancelled
+        }
+
+        guard isTrickArmed else {
+            return .none
+        }
+
+        return isCapturingSecretInput ? .capturingSecret : .armed
+    }
+
+    var isCapturingSecretInput: Bool {
+        isTrickArmed &&
+        pendingOperation == .add &&
+        trickAddOperandCount == 2 &&
+        !isMagicTermComplete
     }
 
     var statusText: String? {
@@ -82,16 +106,29 @@ struct MagicCalculator {
 
         clearTapStreak = 0
 
-        if shouldEnterMagicDigit {
-            enterNextMagicDigit(now: now, calendar: calendar)
+        if isCapturingSecretInput {
+            tapSecretInput(now: now, calendar: calendar)
             return
         }
 
         enterVisibleDigit(digit)
     }
 
-    mutating func tapDecimal() {
+    mutating func tapSecretInput(now: Date = Date(), calendar: Calendar = .current) {
+        guard isCapturingSecretInput else { return }
         clearTapStreak = 0
+        enterNextMagicDigit(now: now, calendar: calendar)
+    }
+
+    mutating func tapDecimal() {
+        if isCapturingSecretInput {
+            tapSecretInput()
+            return
+        }
+
+        clearTapStreak = 0
+
+        guard !cancelIfTrickCannotUseNonAddInput() else { return }
 
         if startsNewInput {
             currentInput = "0."
@@ -101,13 +138,25 @@ struct MagicCalculator {
         }
 
         display = currentInput
+        cancelIfVisibleTrickInputIsTooLong()
     }
 
     mutating func tapOperation(_ operation: CalculatorOperation) {
+        if isCapturingSecretInput {
+            tapSecretInput()
+            return
+        }
+
         clearTapStreak = 0
+
+        if isTrickArmed, trickAddOperandCount < 2, operation != .add {
+            cancelTrick()
+            return
+        }
 
         if !startsNewInput {
             recordTrickOperandIfNeeded(for: operation)
+            guard isTrickArmed || !isCancellationIndicatorVisible else { return }
             evaluatePendingOperation()
         } else if storedValue == nil {
             storedValue = currentValue
@@ -118,7 +167,15 @@ struct MagicCalculator {
     }
 
     mutating func tapEquals() {
+        if isCapturingSecretInput {
+            tapSecretInput()
+            return
+        }
+
         clearTapStreak = 0
+
+        guard !cancelIfTrickCannotUseNonAddInput() else { return }
+
         evaluatePendingOperation()
         pendingOperation = nil
         startsNewInput = true
@@ -126,6 +183,11 @@ struct MagicCalculator {
     }
 
     mutating func tapClear() {
+        if isCapturingSecretInput {
+            tapSecretInput()
+            return
+        }
+
         clearTapStreak += 1
 
         if clearTapStreak >= 3 {
@@ -134,6 +196,8 @@ struct MagicCalculator {
             clearTapStreak = 3
             return
         }
+
+        guard !cancelIfTrickCannotUseNonAddInput() else { return }
 
         if startsNewInput || currentInput == "0" {
             resetAll(keepClearStreak: true)
@@ -145,7 +209,14 @@ struct MagicCalculator {
     }
 
     mutating func tapToggleSign() {
+        if isCapturingSecretInput {
+            tapSecretInput()
+            return
+        }
+
         clearTapStreak = 0
+
+        guard !cancelIfTrickCannotUseNonAddInput() else { return }
 
         if currentInput.hasPrefix("-") {
             currentInput.removeFirst()
@@ -154,13 +225,27 @@ struct MagicCalculator {
         }
 
         display = currentInput
+        cancelIfVisibleTrickInputIsTooLong()
     }
 
     mutating func tapPercent() {
+        if isCapturingSecretInput {
+            tapSecretInput()
+            return
+        }
+
         clearTapStreak = 0
+
+        guard !cancelIfTrickCannotUseNonAddInput() else { return }
+
         let percentValue = currentValue / 100
         currentInput = Self.format(percentValue)
         display = currentInput
+        cancelIfVisibleTrickInputIsTooLong()
+    }
+
+    mutating func clearCancellationIndicator() {
+        isCancellationIndicatorVisible = false
     }
 
     private var currentValue: Double {
@@ -172,14 +257,11 @@ struct MagicCalculator {
             return 1
         }
 
-        return min(trickAddOperandCount + (startsNewInput ? 1 : 1), 3)
+        return min(trickAddOperandCount + 1, 3)
     }
 
-    private var shouldEnterMagicDigit: Bool {
-        isTrickArmed &&
-        pendingOperation == .add &&
-        trickAddOperandCount == 2 &&
-        (startsNewInput || hasStartedMagicTerm)
+    private var isMagicTermComplete: Bool {
+        hasStartedMagicTerm && nextMagicDigitIndex >= magicTermDigits.count
     }
 
     private mutating func enterVisibleDigit(_ digit: String) {
@@ -193,11 +275,17 @@ struct MagicCalculator {
         }
 
         display = currentInput
+        cancelIfVisibleTrickInputIsTooLong()
     }
 
     private mutating func enterNextMagicDigit(now: Date, calendar: Calendar) {
         if !hasStartedMagicTerm {
             let plan = Self.makeTrickPlan(currentSum: trickRunningSum, now: now, calendar: calendar)
+            guard plan.isSevenDigitSelection else {
+                cancelTrick()
+                return
+            }
+
             activeTrickPlan = plan
             magicTermDigits = Array(plan.selectedNumberText)
             nextMagicDigitIndex = 0
@@ -210,12 +298,23 @@ struct MagicCalculator {
 
         let chosenDigit = String(magicTermDigits[nextMagicDigitIndex])
         nextMagicDigitIndex += 1
-        enterVisibleDigit(chosenDigit)
+        enterSecretDigit(chosenDigit)
+    }
+
+    private mutating func enterSecretDigit(_ digit: String) {
+        if startsNewInput {
+            currentInput = digit
+            startsNewInput = false
+        } else {
+            currentInput.append(digit)
+        }
+
+        display = currentInput
     }
 
     private mutating func recordTrickOperandIfNeeded(for operation: CalculatorOperation) {
         guard isTrickArmed, operation == .add, !hasStartedMagicTerm else { return }
-        guard let integerValue = Int(currentInput), String(abs(integerValue)).count == 6 else { return }
+        guard let integerValue = Int(currentInput) else { return }
 
         trickRunningSum += integerValue
         trickAddOperandCount += 1
@@ -245,6 +344,34 @@ struct MagicCalculator {
         display = currentInput
     }
 
+    @discardableResult
+    private mutating func cancelIfTrickCannotUseNonAddInput() -> Bool {
+        guard isTrickArmed, trickAddOperandCount < 2 else { return false }
+        cancelTrick()
+        return true
+    }
+
+    private mutating func cancelIfVisibleTrickInputIsTooLong() {
+        guard isTrickArmed, trickAddOperandCount < 2, !startsNewInput else { return }
+        let digitCount = currentInput.filter(\.isNumber).count
+
+        if digitCount > 6 {
+            cancelTrick()
+        }
+    }
+
+    private mutating func cancelTrick() {
+        isTrickArmed = false
+        trickAddOperandCount = 0
+        trickRunningSum = 0
+        hasStartedMagicTerm = false
+        magicTermDigits = []
+        nextMagicDigitIndex = 0
+        activeTrickPlan = nil
+        isCancellationIndicatorVisible = true
+        cancellationToken += 1
+    }
+
     private mutating func resetAll(keepClearStreak: Bool = false) {
         let streak = clearTapStreak
         display = "0"
@@ -259,6 +386,7 @@ struct MagicCalculator {
         magicTermDigits = []
         nextMagicDigitIndex = 0
         activeTrickPlan = nil
+        isCancellationIndicatorVisible = false
         clearTapStreak = keepClearStreak ? streak : 0
     }
 
@@ -269,6 +397,8 @@ struct MagicCalculator {
         hasStartedMagicTerm = false
         magicTermDigits = []
         nextMagicDigitIndex = 0
+        activeTrickPlan = nil
+        isCancellationIndicatorVisible = false
     }
 
     static func makeTrickPlan(currentSum: Int, now: Date, calendar: Calendar = .current) -> MagicTrickPlan {

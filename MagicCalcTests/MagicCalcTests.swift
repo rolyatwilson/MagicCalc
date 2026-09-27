@@ -41,14 +41,67 @@ struct MagicCalcTests {
         let now = date(month: 9, day: 27, hour: 21, minute: 14, second: 29)
         var calculator = armedCalculatorWithTwoTerms(now: now)
 
+        #expect(calculator.indicatorState == .capturingSecret)
+
         calculator.tapDigit("9", now: now, calendar: calendar)
         #expect(calculator.display == "8")
+        #expect(calculator.indicatorState == .capturingSecret)
 
         enter("999999", into: &calculator, now: now)
         #expect(calculator.display == "8494337")
+        #expect(calculator.indicatorState == .armed)
 
         calculator.tapEquals()
         #expect(calculator.display == "9272114")
+        #expect(calculator.indicatorState == .none)
+    }
+
+    @Test func blindEntryConsumesAnyButtonAsNextSecretDigit() {
+        let now = date(month: 9, day: 27, hour: 21, minute: 14, second: 29)
+        var calculator = armedCalculatorWithTwoTerms(now: now)
+
+        calculator.tapOperation(.multiply)
+        calculator.tapClear()
+        calculator.tapEquals()
+        calculator.tapDecimal()
+        calculator.tapToggleSign()
+        calculator.tapPercent()
+        calculator.tapOperation(.divide)
+
+        #expect(calculator.display == "8494337")
+        #expect(calculator.indicatorState == .armed)
+
+        calculator.tapEquals()
+        #expect(calculator.display == "9272114")
+        #expect(calculator.indicatorState == .none)
+    }
+
+    @Test func trickCancelsWhenVisibleTermHasMoreThanSixDigits() {
+        let now = date(month: 9, day: 27, hour: 21, minute: 14, second: 29)
+        var calculator = MagicCalculator()
+
+        calculator.tapClear()
+        calculator.tapClear()
+        calculator.tapClear()
+        enter("1234567", into: &calculator, now: now)
+
+        #expect(calculator.indicatorState == .cancelled)
+
+        calculator.clearCancellationIndicator()
+        #expect(calculator.indicatorState == .none)
+    }
+
+    @Test func trickCancelsWhenNonPlusOperatorIsUsedBeforeSecretEntry() {
+        let now = date(month: 9, day: 27, hour: 21, minute: 14, second: 29)
+        var calculator = MagicCalculator()
+
+        calculator.tapClear()
+        calculator.tapClear()
+        calculator.tapClear()
+        enter("123456", into: &calculator, now: now)
+        calculator.tapOperation(.subtract)
+
+        #expect(calculator.indicatorState == .cancelled)
     }
 
     @Test func debugPlanIsAvailableBeforeThirdTermStarts() {

@@ -9,6 +9,8 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var calculator = MagicCalculator()
+    @State private var handledCancellationToken = 0
+    @State private var cancellationClearTask: Task<Void, Never>?
 
     private let rows: [[CalculatorKey]] = [
         [.clear, .toggleSign, .percent, .operation(.divide)],
@@ -32,22 +34,52 @@ struct ContentView: View {
 
             armedIndicator
         }
+        .onChange(of: calculator.cancellationToken) { _, _ in
+            scheduleCancellationIndicatorClear()
+        }
     }
 
     private var armedIndicator: some View {
         Circle()
-            .fill(calculator.isArmed ? Color.green : Color.clear)
+            .fill(indicatorColor)
             .frame(width: 6, height: 6)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(.top, 10)
             .padding(.leading, 10)
-            .accessibilityHidden(!calculator.isArmed)
-            .accessibilityLabel("Trick active")
+            .accessibilityHidden(calculator.indicatorState == .none)
+            .accessibilityLabel(indicatorAccessibilityLabel)
+    }
+
+    private var indicatorColor: Color {
+        switch calculator.indicatorState {
+        case .none:
+            return .clear
+        case .armed:
+            return .green
+        case .capturingSecret:
+            return .yellow
+        case .cancelled:
+            return .red
+        }
+    }
+
+    private var indicatorAccessibilityLabel: String {
+        switch calculator.indicatorState {
+        case .none:
+            return ""
+        case .armed:
+            return "Trick active"
+        case .capturingSecret:
+            return "Secret input active"
+        case .cancelled:
+            return "Trick cancelled"
+        }
     }
 
     #if DEBUG
     // Hidden for now. Keep this debug panel handy while tuning the trick math;
     // it shows armed state, current term, running sum, secret term, and target output.
+    // To show it again, place debugPanel in the root VStack above Spacer.
     private var debugPanel: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             VStack(alignment: .leading, spacing: 4) {
@@ -108,6 +140,11 @@ struct ContentView: View {
     }
 
     private func tap(_ key: CalculatorKey) {
+        if calculator.isCapturingSecretInput {
+            calculator.tapSecretInput()
+            return
+        }
+
         switch key {
         case .digit(let digit):
             calculator.tapDigit(digit)
@@ -123,6 +160,21 @@ struct ContentView: View {
             calculator.tapOperation(operation)
         case .equals:
             calculator.tapEquals()
+        }
+    }
+
+    private func scheduleCancellationIndicatorClear() {
+        let token = calculator.cancellationToken
+        guard token > 0, token != handledCancellationToken else { return }
+
+        handledCancellationToken = token
+        cancellationClearTask?.cancel()
+        cancellationClearTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
+
+            if calculator.cancellationToken == token {
+                calculator.clearCancellationIndicator()
+            }
         }
     }
 }
