@@ -318,7 +318,7 @@ private enum CalculatorKey: Hashable {
         case .operation, .equals:
             return 50
         case .backspace:
-            return 42
+            return 34
         case .toggleSign:
             return 40
         case .percent:
@@ -327,6 +327,27 @@ private enum CalculatorKey: Hashable {
             return 38
         default:
             return 38
+        }
+    }
+
+    var systemImageName: String? {
+        switch self {
+        case .backspace:
+            return "delete.left"
+        case .toggleSign:
+            return "plus.forwardslash.minus"
+        case .operation(.add):
+            return "plus"
+        case .operation(.subtract):
+            return "minus"
+        case .operation(.multiply):
+            return "multiply"
+        case .operation(.divide):
+            return "divide"
+        case .equals:
+            return "equal"
+        default:
+            return nil
         }
     }
 
@@ -425,7 +446,7 @@ private struct CalculatorButton: View {
                         .stroke(key.borderColor, lineWidth: 1)
                 }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CalculatorPressButtonStyle())
         .accessibilityLabel(accessibilityLabel)
     }
 
@@ -439,12 +460,23 @@ private struct CalculatorButton: View {
 
     @ViewBuilder
     private var buttonContent: some View {
-        switch key {
-        case .backspace, .toggleSign:
-            Image(systemName: key.title)
-        default:
+        if let systemImageName = key.systemImageName {
+            Image(systemName: systemImageName)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        } else {
             Text(titleOverride ?? key.title)
         }
+    }
+}
+
+private struct CalculatorPressButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .overlay {
+                Capsule()
+                    .fill(.white.opacity(configuration.isPressed ? 0.22 : 0))
+            }
+            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
     }
 }
 
