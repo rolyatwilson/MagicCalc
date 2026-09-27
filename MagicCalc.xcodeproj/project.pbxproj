@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		564A8A4130693650002049B3 /* Trick.md in Resources */ = {isa = PBXBuildFile; fileRef = 564A8A4030693650002049B3 /* Trick.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		564A8A203069336C002049B3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		564A8A103069336B002049B3 /* MagicCalc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MagicCalc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		564A8A1F3069336C002049B3 /* MagicCalcTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MagicCalcTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		564A8A293069336C002049B3 /* MagicCalcUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MagicCalcUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		564A8A4030693650002049B3 /* Trick.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Trick.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -79,6 +84,7 @@
 				564A8A223069336C002049B3 /* MagicCalcTests */,
 				564A8A2C3069336C002049B3 /* MagicCalcUITests */,
 				564A8A113069336B002049B3 /* Products */,
+				564A8A4030693650002049B3 /* Trick.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -212,6 +218,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				564A8A4130693650002049B3 /* Trick.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -395,6 +402,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 595KBU37XM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -426,6 +434,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 595KBU37XM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
