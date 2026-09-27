@@ -2,6 +2,8 @@
 
 MagicCalc looks like a normal calculator, but it is made for a party magic trick.
 
+![MagicCalc trick preview](README-assets/trick-preview.png)
+
 ## What It Does
 
 The app helps a magician lead a group through a calculator trick. Everyone uses their own calculator. At the end, the answer matches the current date and time.
